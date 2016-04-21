@@ -15,7 +15,7 @@ public class MyApplication extends Application {
     Chronometer chronometer;
     MySQLiteHelper db;
     static DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
-
+    public static final String LOG="ScreenTimeMonitor";
     @Override
     public void onCreate(){
         super.onCreate();
@@ -43,7 +43,8 @@ public class MyApplication extends Application {
             } else if (parts.length == 3) {
                 seconds = Integer.parseInt(parts[2]);
                 minutes = Integer.parseInt(parts[1]);
-                hours = Integer.parseInt(parts[1]);
+                if(parts[0]!= null && parts[0].length()> 0 && !parts[0].trim().equals("0"))
+                hours = Integer.parseInt(parts[0].trim());
             }
         }
      long value = hours * 60 * 60 + minutes * 60 + seconds;
@@ -55,7 +56,7 @@ public class MyApplication extends Application {
         String currentDate = dateFormat.format(new Date());
         Calendar calendar = Calendar.getInstance();
         int intTime = 0;
-        int day = calendar.get(Calendar.DAY_OF_WEEK)-1;
+        int day = calendar.get(Calendar.DAY_OF_WEEK);
 
         dayOfWeek= getDayOfTheWeek(day);
 

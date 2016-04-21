@@ -14,6 +14,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -60,11 +61,16 @@ public class ByApp extends AppCompatActivity {
 
     }
     private boolean hasPermission() {
+        boolean return_mode=false;
         AppOpsManager appOps = (AppOpsManager)
                 getSystemService(getApplicationContext().APP_OPS_SERVICE);
         int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
                 android.os.Process.myUid(), getPackageName());
-        return mode == AppOpsManager.MODE_ALLOWED;
+
+        if(mode == AppOpsManager.MODE_ALLOWED) {
+            return_mode =true;
+        }
+        return return_mode;
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -74,61 +80,53 @@ public class ByApp extends AppCompatActivity {
                     new Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS),
                     1);
         }
-           Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance();
         long endTime = calendar.getTimeInMillis();
         calendar.add(Calendar.DAY_OF_MONTH, -1);
         long startTime = calendar.getTimeInMillis()-10000;
-        List<UsageStats> usageStatsList = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY,startTime,endTime);
+        List<UsageStats> usageStatsList = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime);
         appUsageStatList.clear();
-        TreeSet<AppUsageStat> tree = new TreeSet<AppUsageStat>(new AppStatComparator());
-        int sortOrder= 1;
-        int count = usageStatsList.size();
-        int maxCount = 0;
-        while (count>0 && tree.size()<10) {
+        //TreeSet<AppUsageStat> tree = new TreeSet<AppUsageStat>(new AppStatComparator());
+        //int sortOrder= 1;
+        int count = 0;
+       // int maxCount = 0;
+        Log.d(MyApplication.LOG,"usageStatsList count " + usageStatsList.size());
+        ListIterator<UsageStats> itr1= usageStatsList.listIterator();
+        while(itr1.hasNext()){
+            UsageStats stats = itr1.next();
+          //  Log.d(MyApplication.LOG,"usageStatsList package name:" + stats.getPackageName() );
+            if("com.example.spicd.technovationtrial".equals(stats.getPackageName())){
+                itr1.remove();
+            }
+        }
+        String packageName=usageStatsList.get(count).getPackageName();
+        while (count<usageStatsList.size()) {
             AppUsageStat stat = new AppUsageStat();
-            String packageName = usageStatsList.get(0).getPackageName();
-            long totalTimeForPackage = 0;
+
             try {
+                packageName=usageStatsList.get(count).getPackageName();
+
                 ApplicationInfo appInfo = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA);
-                String appName= (String) packageManager.getApplicationLabel(appInfo);
-                for (int i=0; i<usageStatsList.size();i++) {
-                    if (usageStatsList.get(i).getTotalTimeInForeground() > 0) {
-                        if(packageName.equalsIgnoreCase(usageStatsList.get(i).getPackageName())) {
-                            totalTimeForPackage = totalTimeForPackage + usageStatsList.get(i).getTotalTimeInForeground();
-                            System.out.println("@@@@@@@@@@ Usage " + "appName : " + appName + " " + totalTimeForPackage);
-                        }
-                    }
-                }
-                if(totalTimeForPackage > 0) {
-                    stat.setAppName( appName + " --> " + getDurationBreakdown(totalTimeForPackage));
-                    stat.setTimeSpent(totalTimeForPackage);
-                    //appUsageStatList.add(stat);
-                    tree.add(stat);
-                    }
 
-                ListIterator<UsageStats> itr= usageStatsList.listIterator();
-                while(itr.hasNext()){
-                    UsageStats stats = itr.next();
-                    if(packageName.equals(stats.getPackageName())){
-                        itr.remove();
-                    }
-                }
-                count = usageStatsList.size();
-            System.out.println("Usage " + "appName : " + stat.getAppName() + " Cumulative: " + stat.getTimeSpent());
+               String appName = (String) packageManager.getApplicationLabel(appInfo);
+                System.out.println("AAAAAAAAAAAAAA " + appName + " --> " + getDurationBreakdown(usageStatsList.get(count).getTotalTimeInForeground()));
+                stat.setAppName(appName + " --> " + getDurationBreakdown(usageStatsList.get(count).getTotalTimeInForeground()));
+  //              stat.setTimeSpent(usageStatsList.get(count).getTotalTimeInForeground());
+                appUsageStatList.add(stat);
+                Log.d(MyApplication.LOG, "AAAAAAAAAAAAAAA  count  " + count + "appName " + packageName);
+                count++;
             } catch (Exception e) {
-
+                count++;
+                continue;
+              //  e.printStackTrace();
             }
 
-
-            //   Toast.makeText(getApplicationContext(),
-            //         "Usage: " + appUsageStatList.toString(), Toast.LENGTH_LONG).show();
-            appUsageStatList.clear();
-            appUsageStatList.addAll(tree);
+        }
             ByAppStatsAdaptor adapter = new ByAppStatsAdaptor(this.getApplicationContext(), appUsageStatList);
             byAppListView.setAdapter(adapter);
 
         }
-    }
+
 
     public static String getDurationBreakdown(long millis)
     {
@@ -151,7 +149,7 @@ public class ByApp extends AppCompatActivity {
         return(result);
     }
     public void getProcessName(View view) {
-        System.out.println("getProcessName");
+        Log.d(MyApplication.LOG,"getProcessName");
         String foregroundProcess = "";
         ActivityManager activityManager = (ActivityManager) getApplicationContext().getSystemService(ACTIVITY_SERVICE);
         // Process running
@@ -162,20 +160,20 @@ public class ByApp extends AppCompatActivity {
             List<UsageStats> stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000*180, time);
             // Sort the stats by the last time used
             if(stats != null) {
-                System.out.println("11111");
+                Log.d(MyApplication.LOG,"11111");
                 for (UsageStats stat:stats ){
-                    System.out.println("11111 " + stat.getPackageName());
+                    Log.d(MyApplication.LOG,"11111 " + stat.getPackageName());
                 }
                 SortedMap<Long,UsageStats> mySortedMap = new TreeMap<Long,UsageStats>();
                 for (UsageStats usageStats : stats) {
                     mySortedMap.put(usageStats.getLastTimeUsed(),usageStats);
                 }
                 if(mySortedMap != null && !mySortedMap.isEmpty()) {
-                    System.out.println("22222");
+                    Log.d(MyApplication.LOG,"22222");
                     String topPackageName =  mySortedMap.get(mySortedMap.lastKey()).getPackageName();
                     foregroundProcess = topPackageName;
                 }else{
-                    System.out.println("333333");
+                    Log.d(MyApplication.LOG,"333333");
                 }
             }
         } else {
@@ -183,7 +181,7 @@ public class ByApp extends AppCompatActivity {
             foregroundProcess = foregroundTaskInfo.topActivity.getPackageName();
 
         }
-        System.out.println(foregroundProcess);
+        Log.d(MyApplication.LOG,foregroundProcess);
         //return foregroundProcess;
     }
 }

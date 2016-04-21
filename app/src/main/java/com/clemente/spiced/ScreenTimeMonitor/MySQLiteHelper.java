@@ -15,7 +15,7 @@ import java.util.List;
 
     public class MySQLiteHelper extends SQLiteOpenHelper {
 
-        private static final int DATABASE_VERSION = 5;
+        private static final int DATABASE_VERSION = 7;
         private static final String DATABASE_NAME = "TechTimeDB";
     public static final String TABLE_TABLE1 = "TechTime";
 
@@ -73,6 +73,7 @@ import java.util.List;
         ContentValues args = new ContentValues();
         args.put(KEY_TIMESPENT, value);
         db.update(TABLE_TABLE1, args, strFilter, null);
+        db.close();
     }
     public List<TechTime> getAllTechTimes(int daysDisplayed) {
         List<TechTime> techTimes = new ArrayList<TechTime>();
@@ -98,6 +99,7 @@ import java.util.List;
             e.printStackTrace();
     } finally {
         cursor.close();
+            db.close();
     }
         return techTimes;
     }
